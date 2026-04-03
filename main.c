@@ -75,9 +75,31 @@ int main(){
     // init ball
     char *ballpngpath = NULL;
     SDL_Surface *ballsurface = NULL;
+    SDL_Texture *balltexture = NULL;
+    SDL_FRect ballrect; // for the ball position
 
     asprintf(&ballpngpath,"%sassets/ball.png",SDL_GetBasePath());
-    ballsurface = SDL_LoadBMP(ballpngpath);
+    ballsurface = SDL_LoadPNG(ballpngpath);
+    if(!ballsurface){
+        fprintf(stderr,"Error loading ball surface : %s\n",SDL_GetError());
+        game_cleanup(&game, EXIT_FAILURE);
+    }
+    free(ballpngpath);
+
+    balltexture = SDL_CreateTextureFromSurface(game.renderer, ballsurface);
+
+    if(!balltexture){
+        fprintf(stderr,"Error loading ball texture : %s\n",SDL_GetError());
+        game_cleanup(&game, EXIT_FAILURE);
+    }
+
+    ballrect.h = ballsurface->h;
+    ballrect.w = (*ballsurface).w; 
+    ballrect.x = 10;
+    ballrect.y =40;
+
+    SDL_DestroySurface(ballsurface);
+    // we have the ball texture to render now 
     
 
     while (true) { // game or render loop
@@ -124,6 +146,12 @@ int main(){
         paddle_update(&paddle);
         // draw paddle
         paddle_draw(&game,&paddle);
+
+        // draw ball texture
+        SDL_RenderTexture(game.renderer,
+                          balltexture, 
+                          NULL,
+                          &ballrect);
 
         SDL_RenderPresent(game.renderer); // render the canvas
 
