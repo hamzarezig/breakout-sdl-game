@@ -2,7 +2,7 @@ CC = gcc
 
 all: main.c
 	$(CC) main.c -o main -lSDL3
-run: main
+run: main.c
 	$(CC) main.c -o main -lSDL3
 	./main
 clean:

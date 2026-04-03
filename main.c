@@ -2,9 +2,11 @@
 
 #include <SDL3/SDL_error.h>
 #include <SDL3/SDL_events.h>
+#include <SDL3/SDL_filesystem.h>
 #include <SDL3/SDL_init.h>
 #include <SDL3/SDL_rect.h>
 #include <SDL3/SDL_render.h>
+#include <SDL3/SDL_surface.h>
 #include <SDL3/SDL_timer.h>
 #include <SDL3/SDL_video.h>
 
@@ -38,12 +40,12 @@ typedef struct {
 
 
 
-void game_cleanup(Game *game,int exit_status);
 bool sdl_initialize(Game *game);
+void game_cleanup(Game *game,int exit_status);
+// TODO make paddle, ball init funcs
+// void paddle_init();
 void paddle_update(Paddle *paddle);
 void paddle_draw(Game *game,Paddle *paddle);
-
-void DrawCircle(SDL_Renderer * renderer, int32_t centreX, int32_t centreY, int32_t radius);
 
 int main(){
 
@@ -56,6 +58,7 @@ int main(){
         game_cleanup(&game,EXIT_FAILURE);
     }
 
+    // init paddle 
     Paddle paddle = {
         .rect = {
             .h = PADDLE_HEIGHT,
@@ -68,6 +71,14 @@ int main(){
             .left=false,
         },
     };
+
+    // init ball
+    char *ballpngpath = NULL;
+    SDL_Surface *ballsurface = NULL;
+
+    asprintf(&ballpngpath,"%sassets/ball.png",SDL_GetBasePath());
+    ballsurface = SDL_LoadBMP(ballpngpath);
+    
 
     while (true) { // game or render loop
         SDL_Event event; // see if there are any events 
@@ -113,7 +124,6 @@ int main(){
         paddle_update(&paddle);
         // draw paddle
         paddle_draw(&game,&paddle);
-        DrawCircle(game.renderer, 300, 300, 20);
 
         SDL_RenderPresent(game.renderer); // render the canvas
 
@@ -170,44 +180,5 @@ void game_cleanup(Game *game,int exit_status){
     SDL_DestroyWindow(game->window);
     SDL_Quit();
     exit(exit_status);
-}
-
-// optional
-void DrawCircle(SDL_Renderer * renderer, int32_t centreX, int32_t centreY, int32_t radius)
-{
-   const int32_t diameter = (radius * 2);
-
-   int32_t x = (radius - 1);
-   int32_t y = 0;
-   int32_t tx = 1;
-   int32_t ty = 1;
-   int32_t error = (tx - diameter);
-
-   while (x >= y)
-   {
-      //  Each of the following renders an octant of the circle
-      SDL_RenderPoint(renderer, centreX + x, centreY - y);
-      SDL_RenderPoint(renderer, centreX + x, centreY + y);
-      SDL_RenderPoint(renderer, centreX - x, centreY - y);
-      SDL_RenderPoint(renderer, centreX - x, centreY + y);
-      SDL_RenderPoint(renderer, centreX + y, centreY - x);
-      SDL_RenderPoint(renderer, centreX + y, centreY + x);
-      SDL_RenderPoint(renderer, centreX - y, centreY - x);
-      SDL_RenderPoint(renderer, centreX - y, centreY + x);
-
-      if (error <= 0)
-      {
-         ++y;
-         error += ty;
-         ty += 2;
-      }
-
-      if (error > 0)
-      {
-         --x;
-         tx += 2;
-         error += (tx - diameter);
-      }
-   }
 }
 
