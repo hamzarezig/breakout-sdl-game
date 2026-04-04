@@ -15,12 +15,14 @@
 #include <stdbool.h>
 
 #define WINDOW_TITLE "Breakout Game"
-#define SCREEN_WIDTH 800
+#define SCREEN_WIDTH 600
 #define SCREEN_HEIGHT 800
 
 #define PADDLE_HEIGHT 50.0
 #define PADDLE_WIDTH 300.0
 #define PADDLE_SPEED 10.0
+
+#define BALL_SPEED 20.0f
 
 typedef struct{
     SDL_Window *window;
@@ -38,6 +40,17 @@ typedef struct {
     Directions directions;
 } Paddle ;
 
+typedef struct {
+    float x;
+    float y;
+} Vector2D;
+
+typedef struct {
+    SDL_Texture *texture;
+    SDL_FRect rect; 
+    Vector2D velocity;
+} Ball;
+
 
 
 bool sdl_initialize(Game *game);
@@ -46,6 +59,8 @@ void game_cleanup(Game *game,int exit_status);
 // void paddle_init();
 void paddle_update(Paddle *paddle);
 void paddle_draw(Game *game,Paddle *paddle);
+// TODO func draw and init ball
+void ball_update(Ball *ball);
 
 int main(){
 
@@ -73,30 +88,35 @@ int main(){
     };
 
     // init ball
+    Ball ball = {
+        .texture = NULL,
+    };
+
     char *ballpngpath = NULL;
-    SDL_Surface *ballsurface = NULL;
-    SDL_Texture *balltexture = NULL;
-    SDL_FRect ballrect; // for the ball position
+    SDL_Surface *ballsurface = NULL; // surface is a pixel data the cpu can use the texture is for the gpu 
 
     asprintf(&ballpngpath,"%sassets/ball.png",SDL_GetBasePath());
     ballsurface = SDL_LoadPNG(ballpngpath);
+
     if(!ballsurface){
         fprintf(stderr,"Error loading ball surface : %s\n",SDL_GetError());
         game_cleanup(&game, EXIT_FAILURE);
     }
     free(ballpngpath);
 
-    balltexture = SDL_CreateTextureFromSurface(game.renderer, ballsurface);
+    ball.texture = SDL_CreateTextureFromSurface(game.renderer, ballsurface);
 
-    if(!balltexture){
+    if(!ball.texture){
         fprintf(stderr,"Error loading ball texture : %s\n",SDL_GetError());
         game_cleanup(&game, EXIT_FAILURE);
     }
 
-    ballrect.h = ballsurface->h;
-    ballrect.w = (*ballsurface).w; 
-    ballrect.x = 10;
-    ballrect.y =40;
+    ball.rect.h = 30.0f;
+    ball.rect.w = 30.0f;
+    ball.rect.x = 10.0f;
+    ball.rect.y = 40.0f;
+    ball.velocity.x = BALL_SPEED;
+    ball.velocity.y = BALL_SPEED;
 
     SDL_DestroySurface(ballsurface);
     // we have the ball texture to render now 
@@ -139,7 +159,7 @@ int main(){
             }
         }
 
-        SDL_SetRenderDrawColor(game.renderer, 01, 01, 01, 255); // canvas background  
+        SDL_SetRenderDrawColor(game.renderer, 11, 11 , 11, 255); // canvas background  
         SDL_RenderClear(game.renderer); // clearing with that color
 
         // update paddle 
@@ -147,20 +167,37 @@ int main(){
         // draw paddle
         paddle_draw(&game,&paddle);
 
+        ball_update(&ball);
         // draw ball texture
         SDL_RenderTexture(game.renderer,
-                          balltexture, 
+                          ball.texture, 
                           NULL,
-                          &ballrect);
+                          &ball.rect);
 
         SDL_RenderPresent(game.renderer); // render the canvas
 
         SDL_Delay(16); // fps like setup a 16ms delay gives 60fps
     }
 
+    SDL_DestroyTexture(ball.texture);
     game_cleanup(&game,EXIT_SUCCESS);
 
     return 0;
+}
+
+void ball_update(Ball *ball){
+    //check for collision
+    if(ball->rect.x <= 0 || (ball->rect.x + ball->rect.w) >= SCREEN_WIDTH) {
+        ball->velocity.x *=-1.0f;
+    }
+    if(ball->rect.y <= 0 || (ball->rect.y + ball->rect.h) >= SCREEN_HEIGHT) {
+        ball->velocity.y *=-1.0f;
+    }
+
+    //update ball position
+    ball->rect.x += ball->velocity.x;
+    ball->rect.y += ball->velocity.y;
+
 }
 
 void paddle_update(Paddle *paddle){
