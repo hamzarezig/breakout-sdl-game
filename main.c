@@ -59,7 +59,8 @@ void game_cleanup(Game *game,int exit_status);
 // void paddle_init();
 void paddle_update(Paddle *paddle);
 void paddle_draw(Game *game,Paddle *paddle);
-// TODO func draw and init ball
+// TODO func init ball
+void ball_draw(Game *game,Ball *ball);
 void ball_update(Ball *ball);
 
 int main(){
@@ -162,17 +163,11 @@ int main(){
         SDL_SetRenderDrawColor(game.renderer, 11, 11 , 11, 255); // canvas background  
         SDL_RenderClear(game.renderer); // clearing with that color
 
-        // update paddle 
         paddle_update(&paddle);
-        // draw paddle
         paddle_draw(&game,&paddle);
 
         ball_update(&ball);
-        // draw ball texture
-        SDL_RenderTexture(game.renderer,
-                          ball.texture, 
-                          NULL,
-                          &ball.rect);
+        ball_draw(&game,&ball);
 
         SDL_RenderPresent(game.renderer); // render the canvas
 
@@ -198,6 +193,12 @@ void ball_update(Ball *ball){
     ball->rect.x += ball->velocity.x;
     ball->rect.y += ball->velocity.y;
 
+}
+void ball_draw(Game *game,Ball *ball){
+        SDL_RenderTexture(game->renderer,
+                          ball->texture, 
+                          NULL,
+                          &ball->rect);
 }
 
 void paddle_update(Paddle *paddle){
