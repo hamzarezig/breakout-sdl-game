@@ -1,5 +1,6 @@
 #include <SDL3/SDL.h>
 
+#include <SDL3/SDL_audio.h>
 #include <SDL3/SDL_error.h>
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_filesystem.h>
@@ -51,6 +52,10 @@ typedef struct {
     Vector2D velocity;
 } Ball;
 
+// audio define 
+SDL_AudioStream *stream = NULL;
+Uint8 *wav_data = NULL;
+Uint32 wav_data_len = 0;
 
 
 bool sdl_initialize(Game *game);
@@ -65,6 +70,7 @@ void ball_update(Ball *ball,Paddle *paddle);
 
 int main(){
 
+    // game init 
     Game game ={
         .window = NULL,
         .renderer = NULL,
@@ -120,6 +126,29 @@ int main(){
     ball.velocity.y = BALL_SPEED;
 
     SDL_DestroySurface(ballsurface);
+
+    // audio init 
+    SDL_AudioSpec spec;
+    char *wav_path = NULL;
+
+    asprintf(&wav_path,"%sassets/skulls_adventure.wav",SDL_GetBasePath());
+    if(!SDL_LoadWAV(wav_path,&spec, &wav_data,&wav_data_len)) {
+        fprintf(stderr,"Error loading wav file : %s\n",SDL_GetError());
+        game_cleanup(&game, EXIT_FAILURE);
+    }
+
+    free(wav_path);
+
+    stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK,
+                                       &spec,
+                                       NULL,
+                                       NULL);
+    if(!stream){
+        fprintf(stderr,"Error create audio stream : %s\n",SDL_GetError());
+        game_cleanup(&game, EXIT_FAILURE);
+    }
+    SDL_ResumeAudioStreamDevice(stream);// start the adudio
+    
     // we have the ball texture to render now 
     
 
@@ -159,8 +188,13 @@ int main(){
                     break;
             }
         }
+        // audio
+        if (SDL_GetAudioStreamQueued(stream) < (int)wav_data_len) {
+            SDL_PutAudioStreamData(stream, wav_data, wav_data_len);
+        }
 
-        SDL_SetRenderDrawColor(game.renderer, 11, 11 , 11, 255); // canvas background  
+        // #222034
+        SDL_SetRenderDrawColor(game.renderer, 34, 32, 52, 255); // canvas background  
         SDL_RenderClear(game.renderer); // clearing with that color
 
         paddle_update(&paddle);
@@ -175,6 +209,7 @@ int main(){
     }
 
     SDL_DestroyTexture(ball.texture);
+    free(wav_data);
     game_cleanup(&game,EXIT_SUCCESS);
 
     return 0;
@@ -254,12 +289,13 @@ void paddle_update(Paddle *paddle){
 }
 void paddle_draw(Game *game,Paddle *paddle){
     // #00ffbb
-    SDL_SetRenderDrawColor(game->renderer, 0x00, 0xff, 0xbb, 0xff);  // square color
+    // rgb(99, 155, 255)
+    SDL_SetRenderDrawColor(game->renderer, 99, 155, 255, 255);  // square color
     SDL_RenderFillRect(game->renderer,&paddle->rect); // draw the square 
 } 
 
 bool sdl_initialize(Game *game){
-    if(!SDL_Init(SDL_INIT_VIDEO)){ // check if initializing SDL worked or not
+    if(!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO)){ // check if initializing SDL worked or not
         fprintf(stderr,"Error initializing SDL : %s\n", SDL_GetError());
         return 1;
     }
