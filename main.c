@@ -182,21 +182,13 @@ int main(){
 
 void ball_update(Ball *ball,Paddle *paddle){
     //check for collision
-    // wall collision
-    if(ball->rect.x <= 0 || (ball->rect.x + ball->rect.w) >= SCREEN_WIDTH) {
-        ball->velocity.x *=-1.0f;
-    }
-    if(ball->rect.y <= 0 || (ball->rect.y + ball->rect.h) >= SCREEN_HEIGHT) {
-        ball->velocity.y *=-1.0f;
-    }
     // paddle collision
-    if(ball->rect.y + ball->rect.h >= paddle->rect.y &&
-       ball->rect.x <= paddle->rect.x + paddle->rect.w && 
-       ball->rect.x + ball->rect.w >= paddle->rect.x &&
-       ball->rect.y <= paddle->rect.y + paddle->rect.h 
-    ) { 
-        // collision detected 
-        ball->velocity.y *=-1.0f;
+    if(ball->rect.y + ball->rect.h > paddle->rect.y &&
+       ball->rect.x < paddle->rect.x + paddle->rect.w && 
+       ball->rect.x + ball->rect.w > paddle->rect.x &&
+       ball->rect.y < paddle->rect.y + paddle->rect.h 
+    ) { // collision detected 
+        
         // collision fix 
         float top,down,right,left;
         float minX,minY;
@@ -215,15 +207,24 @@ void ball_update(Ball *ball,Paddle *paddle){
             } else {
                 ball->rect.x = paddle->rect.x - ball->rect.w ; 
             }
+            ball->velocity.x *=-1.0f;
         } else {
             if(down<top){
                 ball->rect.y = paddle->rect.y + paddle->rect.h ; 
             } else {
                 ball->rect.y = paddle->rect.y - ball->rect.h ; 
             }
+            ball->velocity.y *=-1.0f;
 
         }
 
+    }
+    // wall collision
+    if(ball->rect.x <= 0 || (ball->rect.x + ball->rect.w) >= SCREEN_WIDTH) {
+        ball->velocity.x *=-1.0f;
+    }
+    if(ball->rect.y <= 0 || (ball->rect.y + ball->rect.h) >= SCREEN_HEIGHT) {
+        ball->velocity.y *=-1.0f;
     }
 
     //update ball position
