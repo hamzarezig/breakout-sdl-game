@@ -65,8 +65,8 @@ void game_cleanup(Game *game,int exit_status);
 void paddle_update(Paddle *paddle);
 void paddle_draw(Game *game,Paddle *paddle);
 // TODO func init ball
-void ball_draw(Game *game,Ball *ball);
 void ball_update(Ball *ball,Paddle *paddle);
+void ball_draw(Game *game,Ball *ball);
 
 int main(){
 
@@ -198,9 +198,9 @@ int main(){
         SDL_RenderClear(game.renderer); // clearing with that color
 
         paddle_update(&paddle);
-        paddle_draw(&game,&paddle);
 
         ball_update(&ball,&paddle);
+        paddle_draw(&game,&paddle);
         ball_draw(&game,&ball);
 
         SDL_RenderPresent(game.renderer); // render the canvas
@@ -216,6 +216,9 @@ int main(){
 }
 
 void ball_update(Ball *ball,Paddle *paddle){
+    //update ball position
+    ball->rect.x += ball->velocity.x;
+    ball->rect.y += ball->velocity.y;
     //check for collision
     // paddle collision
     if(ball->rect.y + ball->rect.h > paddle->rect.y &&
@@ -262,9 +265,6 @@ void ball_update(Ball *ball,Paddle *paddle){
         ball->velocity.y *=-1.0f;
     }
 
-    //update ball position
-    ball->rect.x += ball->velocity.x;
-    ball->rect.y += ball->velocity.y;
 
 }
 
