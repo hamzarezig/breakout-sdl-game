@@ -61,7 +61,7 @@ void paddle_update(Paddle *paddle);
 void paddle_draw(Game *game,Paddle *paddle);
 // TODO func init ball
 void ball_draw(Game *game,Ball *ball);
-void ball_update(Ball *ball);
+void ball_update(Ball *ball,Paddle *paddle);
 
 int main(){
 
@@ -166,7 +166,7 @@ int main(){
         paddle_update(&paddle);
         paddle_draw(&game,&paddle);
 
-        ball_update(&ball);
+        ball_update(&ball,&paddle);
         ball_draw(&game,&ball);
 
         SDL_RenderPresent(game.renderer); // render the canvas
@@ -180,13 +180,50 @@ int main(){
     return 0;
 }
 
-void ball_update(Ball *ball){
+void ball_update(Ball *ball,Paddle *paddle){
     //check for collision
+    // wall collision
     if(ball->rect.x <= 0 || (ball->rect.x + ball->rect.w) >= SCREEN_WIDTH) {
         ball->velocity.x *=-1.0f;
     }
     if(ball->rect.y <= 0 || (ball->rect.y + ball->rect.h) >= SCREEN_HEIGHT) {
         ball->velocity.y *=-1.0f;
+    }
+    // paddle collision
+    if(ball->rect.y + ball->rect.h >= paddle->rect.y &&
+       ball->rect.x <= paddle->rect.x + paddle->rect.w && 
+       ball->rect.x + ball->rect.w >= paddle->rect.x &&
+       ball->rect.y <= paddle->rect.y + paddle->rect.h 
+    ) { 
+        // collision detected 
+        ball->velocity.y *=-1.0f;
+        // collision fix 
+        float top,down,right,left;
+        float minX,minY;
+
+        top   = ball->rect.y + ball->rect.h   - paddle->rect.y;
+        down  = ball->rect.y - paddle->rect.y + paddle->rect.h;
+        right = ball->rect.x - paddle->rect.x + paddle->rect.w; 
+        left  = ball->rect.x + ball->rect.w   - paddle->rect.x;
+
+        minX = right < left ? right : left;
+        minY = top   < down ? top   : down;
+
+        if(minX<minY){
+            if(right<left){
+                ball->rect.x = paddle->rect.x + paddle->rect.w ; 
+            } else {
+                ball->rect.x = paddle->rect.x - ball->rect.w ; 
+            }
+        } else {
+            if(down<top){
+                ball->rect.y = paddle->rect.y + paddle->rect.h ; 
+            } else {
+                ball->rect.y = paddle->rect.y - ball->rect.h ; 
+            }
+
+        }
+
     }
 
     //update ball position
@@ -194,6 +231,7 @@ void ball_update(Ball *ball){
     ball->rect.y += ball->velocity.y;
 
 }
+
 void ball_draw(Game *game,Ball *ball){
         SDL_RenderTexture(game->renderer,
                           ball->texture, 
