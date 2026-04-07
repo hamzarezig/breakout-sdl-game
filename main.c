@@ -19,11 +19,16 @@
 #define SCREEN_WIDTH 600
 #define SCREEN_HEIGHT 800
 
-#define PADDLE_HEIGHT 50.0
-#define PADDLE_WIDTH 300.0
+#define PADDLE_HEIGHT 20.0
+#define PADDLE_WIDTH 200.0
 #define PADDLE_SPEED 10.0
 
 #define BALL_SPEED 20.0f
+
+// audio define 
+SDL_AudioStream *stream = NULL;
+Uint8 *wav_data = NULL;
+Uint32 wav_data_len = 0;
 
 typedef struct{
     SDL_Window *window;
@@ -51,11 +56,11 @@ typedef struct {
     SDL_FRect rect; 
     Vector2D velocity;
 } Ball;
+typedef struct {
+    SDL_FRect rect;
+    SDL_Texture *texture;
+}Brick;
 
-// audio define 
-SDL_AudioStream *stream = NULL;
-Uint8 *wav_data = NULL;
-Uint32 wav_data_len = 0;
 
 
 bool sdl_initialize(Game *game);
@@ -118,14 +123,14 @@ int main(){
         game_cleanup(&game, EXIT_FAILURE);
     }
 
-    ball.rect.h = 30.0f;
-    ball.rect.w = 30.0f;
+    ball.rect.h = 20.0f;
+    ball.rect.w = 20.0f;
     ball.rect.x = 10.0f;
     ball.rect.y = 40.0f;
     ball.velocity.x = BALL_SPEED;
     ball.velocity.y = BALL_SPEED;
 
-    SDL_DestroySurface(ballsurface);
+    SDL_DestroySurface(ballsurface); // we have the ball texture to render now 
 
     // audio init 
     SDL_AudioSpec spec;
@@ -149,8 +154,16 @@ int main(){
     }
     SDL_ResumeAudioStreamDevice(stream);// start the adudio
     
-    // we have the ball texture to render now 
-    
+    // bricks init
+
+    Brick brick1 = {
+        .rect = {
+            .x = 10.0f,
+            .y = 10.0f,
+            .w = 50.0f,
+            .h = 20.0f,
+        },
+    };
 
     while (true) { // game or render loop
         SDL_Event event; // see if there are any events 
@@ -198,10 +211,13 @@ int main(){
         SDL_RenderClear(game.renderer); // clearing with that color
 
         paddle_update(&paddle);
-
         ball_update(&ball,&paddle);
+
         paddle_draw(&game,&paddle);
         ball_draw(&game,&ball);
+        // TODO brick draw
+        SDL_SetRenderDrawColor(game.renderer, 0xe8,0x7f,0x24,0xff); // color #E87F24
+        SDL_RenderFillRect(game.renderer,&brick1.rect);
 
         SDL_RenderPresent(game.renderer); // render the canvas
 
