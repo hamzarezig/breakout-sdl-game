@@ -156,14 +156,20 @@ int main(){
     
     // bricks init
 
-    Brick brick1 = {
-        .rect = {
-            .x = 10.0f,
-            .y = 10.0f,
-            .w = 50.0f,
-            .h = 20.0f,
-        },
-    };
+    Brick *bricks[5][5];
+
+    for(int i=0;i<5;i++){
+        for(int j=0;j<5;j++){
+            bricks[i][j] = malloc(sizeof(Brick));
+            bricks[i][j]->rect = (SDL_FRect ){
+                    //        width   padding   start_padding
+                    .x = j * (50.0f + 20.0f)  +   100,
+                    .y = i * (20.0f + 20.0f)  +   100,
+                    .w = 50.0f,
+                    .h = 20.0f,
+            };
+        }
+    }
 
     while (true) { // game or render loop
         SDL_Event event; // see if there are any events 
@@ -215,17 +221,31 @@ int main(){
 
         paddle_draw(&game,&paddle);
         ball_draw(&game,&ball);
-        // TODO brick draw
-        SDL_SetRenderDrawColor(game.renderer, 0xe8,0x7f,0x24,0xff); // color #E87F24
-        SDL_RenderFillRect(game.renderer,&brick1.rect);
+        // TODO brick draw func
+        if(bricks[3][3] != NULL)free(bricks[3][3]); // free memo when it breaks
+        bricks[3][3] = NULL; 
+        for(int i=0;i<5;i++){
+            for(int j=0;j<5;j++) {
+                if(bricks[i][j] != NULL){
+                    SDL_SetRenderDrawColor(game.renderer, 0xe8,0x7f,0x24,0xff); // color #E87F24
+                    SDL_RenderFillRect(game.renderer,&bricks[i][j]->rect);
+                }
+            }
+        }
 
         SDL_RenderPresent(game.renderer); // render the canvas
 
         SDL_Delay(16); // fps like setup a 16ms delay gives 60fps
     }
 
+    // game free 
     SDL_DestroyTexture(ball.texture);
     free(wav_data);
+    for(int i=0;i<5;i++){
+        for(int j=0;j<5;j++){
+            free(bricks[i][j]);
+        }
+    }
     game_cleanup(&game,EXIT_SUCCESS);
 
     return 0;
