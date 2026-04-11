@@ -23,7 +23,7 @@
 #define PADDLE_WIDTH 200.0
 #define PADDLE_SPEED 10.0
 
-#define BALL_SPEED 20.0f
+#define BALL_SPEED 10.0f
 
 // audio define 
 SDL_AudioStream *stream = NULL;
@@ -70,7 +70,7 @@ void game_cleanup(Game *game,int exit_status);
 void paddle_update(Paddle *paddle);
 void paddle_draw(Game *game,Paddle *paddle);
 // TODO func init ball
-void ball_update(Ball *ball,Paddle *paddle);
+void ball_update(Ball *ball,Paddle *paddle,Brick *bricks[5][5]);
 void ball_draw(Game *game,Ball *ball);
 
 int main(){
@@ -125,8 +125,8 @@ int main(){
 
     ball.rect.h = 20.0f;
     ball.rect.w = 20.0f;
-    ball.rect.x = 10.0f;
-    ball.rect.y = 40.0f;
+    ball.rect.x = 50.0f;
+    ball.rect.y = 300.0f;
     ball.velocity.x = BALL_SPEED;
     ball.velocity.y = BALL_SPEED;
 
@@ -217,7 +217,7 @@ int main(){
         SDL_RenderClear(game.renderer); // clearing with that color
 
         paddle_update(&paddle);
-        ball_update(&ball,&paddle);
+        ball_update(&ball,&paddle,bricks);
 
         paddle_draw(&game,&paddle);
         ball_draw(&game,&ball);
@@ -251,11 +251,58 @@ int main(){
     return 0;
 }
 
-void ball_update(Ball *ball,Paddle *paddle){
+void ball_update(Ball *ball,Paddle *paddle,Brick *bricks[5][5]){
     //update ball position
     ball->rect.x += ball->velocity.x;
     ball->rect.y += ball->velocity.y;
     //check for collision
+    // brick collision
+    for(int i=0;i<5;i++){
+        for(int j=0;j<5;j++){
+            if(bricks[i][j] == NULL ) continue;
+            if(ball->rect.y + ball->rect.h > bricks[i][j]->rect.y &&
+               ball->rect.x < bricks[i][j]->rect.x + bricks[i][j]->rect.w && 
+               ball->rect.x + ball->rect.w > bricks[i][j]->rect.x &&
+               ball->rect.y < bricks[i][j]->rect.y + bricks[i][j]->rect.h 
+            ) { // collision with brick
+                
+                // resolve collision
+                float top,down,right,left;
+                float minX,minY;
+
+                top   = ball->rect.y + ball->rect.h         - bricks[i][j]->rect.y;
+                down  = ball->rect.y - bricks[i][j]->rect.y + bricks[i][j]->rect.h;
+                right = ball->rect.x - bricks[i][j]->rect.x + bricks[i][j]->rect.w; 
+                left  = ball->rect.x + ball->rect.w         - bricks[i][j]->rect.x;
+
+                minX = right < left ? right : left;
+                minY = top   < down ? top   : down;
+
+                //flip ball
+                if(minX<minY){
+                    if(right<left){
+                        ball->rect.x = bricks[i][j]->rect.x + bricks[i][j]->rect.w ; 
+                    } else {
+                        ball->rect.x = bricks[i][j]->rect.x - ball->rect.w ; 
+                    }
+                    ball->velocity.x *=-1.0f;
+                } else {
+                    if(down<top){
+                        ball->rect.y = bricks[i][j]->rect.y + bricks[i][j]->rect.h ; 
+                    } else {
+                        ball->rect.y = bricks[i][j]->rect.y - ball->rect.h ; 
+                    }
+                    ball->velocity.y *=-1.0f;
+
+                }
+                // delete brick 
+                free(bricks[i][j]);
+                bricks[i][j] = NULL;
+
+            }
+        }
+    }
+
     // paddle collision
     if(ball->rect.y + ball->rect.h > paddle->rect.y &&
        ball->rect.x < paddle->rect.x + paddle->rect.w && 
@@ -303,6 +350,7 @@ void ball_update(Ball *ball,Paddle *paddle){
 
 
 }
+
 
 void ball_draw(Game *game,Ball *ball){
         SDL_RenderTexture(game->renderer,
