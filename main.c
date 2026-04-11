@@ -16,7 +16,7 @@
 #include <stdbool.h>
 
 #define WINDOW_TITLE "Breakout Game"
-#define SCREEN_WIDTH 600
+#define SCREEN_WIDTH 500
 #define SCREEN_HEIGHT 800
 
 #define PADDLE_HEIGHT 20.0
@@ -30,9 +30,16 @@ SDL_AudioStream *stream = NULL;
 Uint8 *wav_data = NULL;
 Uint32 wav_data_len = 0;
 
+typedef struct {
+    SDL_Texture *texture;
+    SDL_FRect rect;
+
+} Bg ;
+
 typedef struct{
     SDL_Window *window;
     SDL_Renderer *renderer;
+    Bg bg;
 } Game;
 typedef struct{
     bool up;
@@ -79,11 +86,47 @@ int main(){
     Game game ={
         .window = NULL,
         .renderer = NULL,
+        .bg = {
+            .texture = NULL,
+            .rect ={
+                .x = 0.0f,
+                .y = 0.0f,
+                .w = SCREEN_WIDTH,
+                .h = SCREEN_HEIGHT,
+            } ,
+
+        },
     };
 
     if(sdl_initialize(&game)) { // in case of an error
         game_cleanup(&game,EXIT_FAILURE);
     }
+
+    // init background 
+    char *backgroundpath = NULL;
+    SDL_Surface *backgroundsurface = NULL; // surface is a pixel data the cpu can use the texture is for the gpu 
+
+    asprintf(&backgroundpath,"%sassets/background.png",SDL_GetBasePath());
+    backgroundsurface = SDL_LoadPNG(backgroundpath);
+
+    if(!backgroundsurface){
+        fprintf(stderr,"Error loading ball surface : %s\n",SDL_GetError());
+        game_cleanup(&game, EXIT_FAILURE);
+    }
+    free(backgroundpath);
+
+    game.bg.texture = SDL_CreateTextureFromSurface(game.renderer, backgroundsurface);
+
+    if(!game.bg.texture){
+        fprintf(stderr,"Error loading ball texture : %s\n",SDL_GetError());
+        game_cleanup(&game, EXIT_FAILURE);
+    }
+
+    float scale = (float)SCREEN_WIDTH / backgroundsurface->w;
+    game.bg.rect.w = backgroundsurface->w * scale;
+    game.bg.rect.h = backgroundsurface->h *scale ;
+    SDL_DestroySurface(backgroundsurface);
+
 
     // init paddle 
     Paddle paddle = {
@@ -215,6 +258,7 @@ int main(){
         // #222034
         SDL_SetRenderDrawColor(game.renderer, 34, 32, 52, 255); // canvas background  
         SDL_RenderClear(game.renderer); // clearing with that color
+        SDL_RenderTexture(game.renderer,game.bg.texture,NULL,&game.bg.rect);
 
         paddle_update(&paddle);
         ball_update(&ball,&paddle,bricks);
