@@ -5,5 +5,5 @@ all: main.c
 run: main.c
 	$(CC) main.c -o main -lSDL3
 	./main
-clean:
+clean: main
 	rm main 
