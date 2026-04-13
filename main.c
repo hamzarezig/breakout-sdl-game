@@ -5,11 +5,14 @@
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_filesystem.h>
 #include <SDL3/SDL_init.h>
+#include <SDL3/SDL_pixels.h>
 #include <SDL3/SDL_rect.h>
 #include <SDL3/SDL_render.h>
 #include <SDL3/SDL_surface.h>
 #include <SDL3/SDL_timer.h>
 #include <SDL3/SDL_video.h>
+
+#include <SDL3_ttf/SDL_ttf.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -29,6 +32,9 @@
 SDL_AudioStream *stream = NULL;
 Uint8 *wav_data = NULL;
 Uint32 wav_data_len = 0;
+// text 
+TTF_Font *font = NULL;
+
 
 typedef struct {
     SDL_Texture *texture;
@@ -67,6 +73,12 @@ typedef struct {
     SDL_FRect rect;
     SDL_Texture *texture;
 }Brick;
+typedef struct {
+    int score;
+    SDL_Surface *text; // tempo surface
+    SDL_Texture *texture; // texture to render 
+    SDL_FRect rect;
+}Score ;
 
 
 
@@ -214,7 +226,44 @@ int main(){
         }
     }
 
-    while (true) { // game or render loop
+    // text & score init 
+
+    // Open the font 
+    char *fontpath;
+    asprintf(&fontpath,"%sassets/font.ttf",SDL_GetBasePath());
+    font = TTF_OpenFont(fontpath, 16.0f );
+    if (!font) {
+        fprintf(stderr,"Error couldn't open font : %s\n",SDL_GetError());
+        game_cleanup(&game, EXIT_FAILURE);
+    }
+    free(fontpath);
+    SDL_Color textcolor = {
+        .r = 0xff,
+        .g = 0xff,
+        .b = 0xff,
+        .a = 0xff,
+    }; // pure white with #ffffff
+
+    Score score;
+    score.rect.w = 100.0f;
+    score.rect.h = 100.0f;
+    score.rect.x = 100.0f;
+    score.rect.y = 100.0f;
+    
+    score.text = TTF_RenderText_Blended(font, "Score : 9",0,textcolor); // get the surface done 
+    if(score.text) {
+        score.texture =  SDL_CreateTextureFromSurface(game.renderer,score.text);
+        SDL_DestroySurface(score.text);
+    }
+    if(!score.texture){
+        fprintf(stderr,"Error loading text texture : %s\n",SDL_GetError());
+        game_cleanup(&game, EXIT_FAILURE);
+    }
+
+
+
+    // game or render loop
+    while (true) { 
         SDL_Event event; // see if there are any events 
 
         while(SDL_PollEvent(&event)){ // handling events in the game 
@@ -258,7 +307,11 @@ int main(){
         // #222034
         SDL_SetRenderDrawColor(game.renderer, 34, 32, 52, 255); // canvas background  
         SDL_RenderClear(game.renderer); // clearing with that color
+        // setting background
         SDL_RenderTexture(game.renderer,game.bg.texture,NULL,&game.bg.rect);
+
+        // render text 
+        SDL_RenderTexture(game.renderer, score.texture,NULL, &score.rect );
 
         paddle_update(&paddle);
         ball_update(&ball,&paddle,bricks);
@@ -439,6 +492,10 @@ bool sdl_initialize(Game *game){
     game->renderer = SDL_CreateRenderer(game->window, NULL); // NULL to let SDL choose his own graphics driver
     if(!game->renderer) { // check if its NULL
         fprintf(stderr,"Error creating renderer : %s\n", SDL_GetError());
+        return 1;
+    }
+    if(!TTF_Init()){
+        fprintf(stderr,"Error initialize SDL_ttf : %s\n", SDL_GetError());
         return 1;
     }
 
