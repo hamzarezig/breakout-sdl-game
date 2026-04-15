@@ -80,6 +80,7 @@ typedef struct {
     SDL_Texture *texture; // texture to render 
     SDL_FRect rect;
     SDL_Color color;
+    bool changed;
 }Score ;
 
 
@@ -253,6 +254,7 @@ int main(){
         .b = 0xff,
         .a = 0xff,
     }; // pure white with #ffffff
+    score.changed = true;
     
 
     // game or render loop
@@ -328,7 +330,11 @@ int main(){
     }
 
     // game free 
+    // textures
     SDL_DestroyTexture(ball.texture);
+    SDL_DestroyTexture(score.texture);
+    SDL_DestroyTexture(game.bg.texture);
+    // free allocated memeo
     free(wav_data);
     for(int i=0;i<5;i++){
         for(int j=0;j<5;j++){
@@ -340,15 +346,20 @@ int main(){
     return 0;
 }
 void score_draw(Game *game,Score *score){
-    char text[100];
-    sprintf(text,"Score : %d",score->score);
-    score->text = TTF_RenderText_Blended(font ,text ,0 ,score->color); // get the surface done 
-    if(score->text) {
-        score->texture =  SDL_CreateTextureFromSurface(game->renderer,score->text);
-        score->rect.w = score->text->w;
-        score->rect.h = score->text->h;
-    
-        SDL_DestroySurface(score->text);
+    // only craft surface when the score changes 
+    if(score->changed){
+        char *scoretext = NULL ;
+        asprintf(&scoretext,"Score : %d",score->score);
+        score->text = TTF_RenderText_Blended(font ,scoretext ,0 ,score->color); // get the surface done 
+        free(scoretext);
+        if(score->text) {
+            score->texture =  SDL_CreateTextureFromSurface(game->renderer,score->text);
+            score->rect.w = score->text->w;
+            score->rect.h = score->text->h;
+        
+            SDL_DestroySurface(score->text);
+        }
+        score->changed = false;
     }
 
     if(!score->texture){
@@ -375,6 +386,7 @@ void ball_update(Ball *ball,Paddle *paddle,Brick *bricks[5][5], Score *score){
             ) { // collision with brick
                 // update score
                 score->score++;
+                score->changed = true;
                 
                 // resolve collision
                 float top,down,right,left;
