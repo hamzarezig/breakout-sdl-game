@@ -223,10 +223,10 @@ int main(){
             bricks[i][j] = malloc(sizeof(Brick));
             bricks[i][j]->rect = (SDL_FRect ){
                     //        width   padding   start_padding
-                    .x = j * (50.0f + 20.0f)  +   100,
-                    .y = i * (20.0f + 20.0f)  +   100,
-                    .w = 50.0f,
-                    .h = 20.0f,
+                    .x = j * (75.0f + 10.0f)  +   40,
+                    .y = i * (30.0f + 10.0f)  +   40,
+                    .w = 75.0f,
+                    .h = 30.0f,
             };
         }
     }
@@ -312,8 +312,6 @@ int main(){
         paddle_draw(&game,&paddle);
         ball_draw(&game,&ball);
         // TODO brick draw func
-        if(bricks[3][3] != NULL)free(bricks[3][3]); // free memo when it breaks
-        bricks[3][3] = NULL; 
         for(int i=0;i<5;i++){
             for(int j=0;j<5;j++) {
                 if(bricks[i][j] != NULL){
@@ -378,12 +376,13 @@ void ball_update(Ball *ball,Paddle *paddle,Brick *bricks[5][5], Score *score){
     // brick collision
     for(int i=0;i<5;i++){
         for(int j=0;j<5;j++){
-            if(bricks[i][j] == NULL ) continue;
+            if(bricks[i][j] == NULL ) continue; // skip collision for broken bricks 
             if(ball->rect.y + ball->rect.h > bricks[i][j]->rect.y &&
                ball->rect.x < bricks[i][j]->rect.x + bricks[i][j]->rect.w && 
                ball->rect.x + ball->rect.w > bricks[i][j]->rect.x &&
                ball->rect.y < bricks[i][j]->rect.y + bricks[i][j]->rect.h 
             ) { // collision with brick
+
                 // update score
                 score->score++;
                 score->changed = true;
@@ -402,18 +401,8 @@ void ball_update(Ball *ball,Paddle *paddle,Brick *bricks[5][5], Score *score){
 
                 //flip ball
                 if(minX<minY){
-                    if(right<left){
-                        ball->rect.x = bricks[i][j]->rect.x + bricks[i][j]->rect.w ; 
-                    } else {
-                        ball->rect.x = bricks[i][j]->rect.x - ball->rect.w ; 
-                    }
                     ball->velocity.x *=-1.0f;
                 } else {
-                    if(down<top){
-                        ball->rect.y = bricks[i][j]->rect.y + bricks[i][j]->rect.h ; 
-                    } else {
-                        ball->rect.y = bricks[i][j]->rect.y - ball->rect.h ; 
-                    }
                     ball->velocity.y *=-1.0f;
 
                 }
