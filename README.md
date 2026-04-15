@@ -1,7 +1,8 @@
 # Breakout SDL Game
-A classic **Breakout** arcade game built in C using SDL3 and SDL3_ttf.
+A classic **Breakout** arcade game built in C using SDL3.
+
 ![Gameplay Screenshot](screenshot.png)
-> **How to add a screenshot:** Run the game, press your OS screenshot key (e.g. `Print Screen` on Linux/Windows or `Cmd+Shift+3` on macOS), save the file as `screenshot.png` in the root of this repository, and commit it.
+
 ---
 ## Features
 - Smooth 60 FPS game loop
@@ -16,6 +17,7 @@ A classic **Breakout** arcade game built in C using SDL3 and SDL3_ttf.
 |---------|---------|
 | [SDL3](https://github.com/libsdl-org/SDL) | 3.x |
 | [SDL3_ttf](https://github.com/libsdl-org/SDL_ttf) | 3.x |
+
 Install on **Ubuntu / Debian**:
 ```bash
 sudo apt install libsdl3-dev libsdl3-ttf-dev
