@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <strings.h>
 
 #define WINDOW_TITLE "Breakout Game"
 #define SCREEN_WIDTH 500
@@ -78,6 +79,7 @@ typedef struct {
     SDL_Surface *text; // tempo surface
     SDL_Texture *texture; // texture to render 
     SDL_FRect rect;
+    SDL_Color color;
 }Score ;
 
 
@@ -89,8 +91,10 @@ void game_cleanup(Game *game,int exit_status);
 void paddle_update(Paddle *paddle);
 void paddle_draw(Game *game,Paddle *paddle);
 // TODO func init ball
-void ball_update(Ball *ball,Paddle *paddle,Brick *bricks[5][5]);
+void ball_update(Ball *ball,Paddle *paddle,Brick *bricks[5][5], Score *score);
 void ball_draw(Game *game,Ball *ball);
+// TODO func init score
+void score_draw(Game *game,Score *score);
 
 int main(){
 
@@ -237,30 +241,19 @@ int main(){
         game_cleanup(&game, EXIT_FAILURE);
     }
     free(fontpath);
-    SDL_Color textcolor = {
+    // score init 
+
+    Score score;
+    score.score = 0;
+    score.rect.x = 10.0f;
+    score.rect.y = 10.0f;
+    score.color = (SDL_Color){
         .r = 0xff,
         .g = 0xff,
         .b = 0xff,
         .a = 0xff,
     }; // pure white with #ffffff
-
-    Score score;
-    score.rect.w = 100.0f;
-    score.rect.h = 100.0f;
-    score.rect.x = 100.0f;
-    score.rect.y = 100.0f;
     
-    score.text = TTF_RenderText_Blended(font, "Score : 9",0,textcolor); // get the surface done 
-    if(score.text) {
-        score.texture =  SDL_CreateTextureFromSurface(game.renderer,score.text);
-        SDL_DestroySurface(score.text);
-    }
-    if(!score.texture){
-        fprintf(stderr,"Error loading text texture : %s\n",SDL_GetError());
-        game_cleanup(&game, EXIT_FAILURE);
-    }
-
-
 
     // game or render loop
     while (true) { 
@@ -310,11 +303,9 @@ int main(){
         // setting background
         SDL_RenderTexture(game.renderer,game.bg.texture,NULL,&game.bg.rect);
 
-        // render text 
-        SDL_RenderTexture(game.renderer, score.texture,NULL, &score.rect );
 
         paddle_update(&paddle);
-        ball_update(&ball,&paddle,bricks);
+        ball_update(&ball,&paddle,bricks,&score);
 
         paddle_draw(&game,&paddle);
         ball_draw(&game,&ball);
@@ -329,6 +320,7 @@ int main(){
                 }
             }
         }
+        score_draw(&game,&score);
 
         SDL_RenderPresent(game.renderer); // render the canvas
 
@@ -347,8 +339,27 @@ int main(){
 
     return 0;
 }
+void score_draw(Game *game,Score *score){
+    char text[100];
+    sprintf(text,"Score : %d",score->score);
+    score->text = TTF_RenderText_Blended(font ,text ,0 ,score->color); // get the surface done 
+    if(score->text) {
+        score->texture =  SDL_CreateTextureFromSurface(game->renderer,score->text);
+        score->rect.w = score->text->w;
+        score->rect.h = score->text->h;
+    
+        SDL_DestroySurface(score->text);
+    }
 
-void ball_update(Ball *ball,Paddle *paddle,Brick *bricks[5][5]){
+    if(!score->texture){
+        fprintf(stderr,"Error loading text texture : %s\n",SDL_GetError());
+        game_cleanup(game, EXIT_FAILURE);
+    }
+    // render text 
+    SDL_RenderTexture(game->renderer, score->texture,NULL, &score->rect );
+}
+
+void ball_update(Ball *ball,Paddle *paddle,Brick *bricks[5][5], Score *score){
     //update ball position
     ball->rect.x += ball->velocity.x;
     ball->rect.y += ball->velocity.y;
@@ -362,6 +373,8 @@ void ball_update(Ball *ball,Paddle *paddle,Brick *bricks[5][5]){
                ball->rect.x + ball->rect.w > bricks[i][j]->rect.x &&
                ball->rect.y < bricks[i][j]->rect.y + bricks[i][j]->rect.h 
             ) { // collision with brick
+                // update score
+                score->score++;
                 
                 // resolve collision
                 float top,down,right,left;
